@@ -1,0 +1,8 @@
+pkg chaos {
+    // class Foo[T <: str](a: i32, b: T)
+
+    fn test() {
+        let a = java::util::ArrayList // [str]()
+        mut b = java::util::ArrayList // [str]()
+    }
+}
