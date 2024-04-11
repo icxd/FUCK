@@ -24,7 +24,6 @@ typedef slice(node_t *) block_t;
     type_t *type;                                                              \
     node_t *initializer;                                                       \
   })                                                                           \
-                                                                               \
   N(BinOp, {                                                                   \
     token_type_t op;                                                           \
     node_t *lhs, *rhs;                                                         \

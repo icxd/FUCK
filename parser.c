@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 static void n_dump_block(block_t block, uint8_t indent) {
-  for (int i = 0; i < block.size; i++) {
+  for (size_t i = 0; i < block.size; i++) {
     node_t *node = block.items[i];
     if (node == NULL)
       continue;
@@ -83,7 +83,7 @@ static diagnostic_t p_parse_statement(parser_t *, node_t *);
 static diagnostic_t p_parse_let(parser_t *, node_t *, token_type_t);
 
 static diagnostic_t p_parse_expression(parser_t *, node_t *);
-static diagnostic_t p_parse_precedence(parser_t *, node_t *, node_t *, uint8_t);
+static diagnostic_t p_parse_precedence(parser_t *, node_t *, uint8_t);
 static diagnostic_t p_parse_primary(parser_t *, node_t *);
 
 static diagnostic_t p_parse_block(parser_t *, block_t *,
@@ -174,16 +174,17 @@ static diagnostic_t p_parse_let(parser_t *p, node_t *node, token_type_t type) {
 
 static diagnostic_t p_parse_expression(parser_t *p, node_t *node) {
   diagnostic_t diag;
-  node_t lhs;
-  P_CALL(diag, p, p_parse_primary, &lhs);
-  P_CALL(diag, p, p_parse_precedence, node, &lhs, 0);
+  P_CALL(diag, p, p_parse_primary, node);
+  P_CALL(diag, p, p_parse_precedence, node, 0);
   return diag;
 }
 
-static diagnostic_t p_parse_precedence(parser_t *p, node_t *node, node_t *lhs,
+static diagnostic_t p_parse_precedence(parser_t *p, node_t *node,
                                        uint8_t min_precedence) {
   diagnostic_t diag;
   token_t lookahead = p->token;
+
+  printf("%d\n", node->tag);
 
   while (tt_precedence(lookahead.type) != PREC_NONE &&
          tt_precedence(lookahead.type) >= min_precedence) {
@@ -195,16 +196,18 @@ static diagnostic_t p_parse_precedence(parser_t *p, node_t *node, node_t *lhs,
 
     while (tt_precedence(lookahead.type) != PREC_NONE &&
            tt_precedence(lookahead.type) > tt_precedence(op)) {
-      P_CALL(diag, p, p_parse_precedence, node, rhs,
+      P_CALL(diag, p, p_parse_precedence, rhs,
              tt_precedence(op) +
                  (tt_precedence(lookahead.type) > tt_precedence(op) ? 1 : 0));
       lookahead = p->token;
     }
 
-    node->tag = _NODE_BinOp;
-    node->as.NODE_BinOp.op = op;
-    node->as.NODE_BinOp.lhs = lhs;
-    node->as.NODE_BinOp.rhs = rhs;
+    node_t *lhs = malloc(sizeof(node_t));
+    lhs->tag = _NODE_BinOp;
+    lhs->as.NODE_BinOp.op = op;
+    lhs->as.NODE_BinOp.lhs = node;
+    lhs->as.NODE_BinOp.rhs = rhs;
+    node = lhs;
   }
 
   return D_OK();
