@@ -12,6 +12,10 @@ extern void *a_alloc(size_t);
 
 #define INIT_SLICE_CAP 16
 
+#define option(T) T *
+#define some(...) (&(__VA_ARGS__))
+#define none ((void *)0)
+
 /// A dynamically sized array-like data structure.
 #define slice(T)                                                               \
   struct {                                                                     \
