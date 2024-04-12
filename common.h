@@ -10,6 +10,10 @@
 
 #define INIT_SLICE_CAP 16
 
+#define option(T) T *
+#define some(...) (&(__VA_ARGS__))
+#define none ((void *)0)
+
 /// A dynamically sized array-like data structure.
 #define slice(T)                                                               \
   struct {                                                                     \
@@ -22,15 +26,14 @@
     (s)->capacity = INIT_SLICE_CAP;                                            \
     (s)->size = 0;                                                             \
   } while (0)
-#define slice_push(s, ...)                                                    \
+#define slice_push(s, ...)                                                     \
   do {                                                                         \
     if ((s)->size >= (s)->capacity) {                                          \
       (s)->capacity = (s)->capacity == 0 ? INIT_SLICE_CAP : (s)->capacity * 2; \
       (s)->items = realloc((s)->items, sizeof(*(s)->items) * (s)->capacity);   \
     }                                                                          \
-    (s)->items[(s)->size++] = (__VA_ARGS__);                                          \
+    (s)->items[(s)->size++] = (__VA_ARGS__);                                   \
   } while (0)
-
 
 static inline char *format(const char *fmt, ...) {
   va_list args;
