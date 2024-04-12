@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern void *a_alloc(size_t);
+
 #define INIT_SLICE_CAP 16
 
 /// A dynamically sized array-like data structure.
@@ -22,15 +24,14 @@
     (s)->capacity = INIT_SLICE_CAP;                                            \
     (s)->size = 0;                                                             \
   } while (0)
-#define slice_push(s, ...)                                                    \
+#define slice_push(s, ...)                                                     \
   do {                                                                         \
     if ((s)->size >= (s)->capacity) {                                          \
       (s)->capacity = (s)->capacity == 0 ? INIT_SLICE_CAP : (s)->capacity * 2; \
       (s)->items = realloc((s)->items, sizeof(*(s)->items) * (s)->capacity);   \
     }                                                                          \
-    (s)->items[(s)->size++] = (__VA_ARGS__);                                          \
+    (s)->items[(s)->size++] = (__VA_ARGS__);                                   \
   } while (0)
-
 
 static inline char *format(const char *fmt, ...) {
   va_list args;
@@ -134,7 +135,7 @@ static inline void print_diagnostic(diagnostic_t diagnostic, const char *source,
   }
 
   size_t length = line_end - line_start;
-  char line_buf[length + 1];
+  char *line_buf = (char *)a_alloc(length + 1);
   strncpy(line_buf, source + line_start, length);
   line_buf[length] = '\0';
   char *buf = (char *)line_buf;

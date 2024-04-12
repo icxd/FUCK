@@ -1,3 +1,4 @@
+#include "arena.h"
 #include "common.h"
 #include "lexer.h"
 #include "parser.h"
@@ -13,6 +14,8 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  a_init(1024);
+
   char *path = argv[1];
 
   char buffer[MAX_BUF_SIZE];
@@ -21,10 +24,10 @@ int main(int argc, char *argv[]) {
 
   diagnostic_t diag;
 
-  lexer_t *l = malloc(sizeof(lexer_t));
+  lexer_t *l = (lexer_t *)a_alloc(sizeof(lexer_t));
   l_init(l, buffer);
 
-  lexer_t *l_copy = malloc(sizeof(lexer_t));
+  lexer_t *l_copy = (lexer_t *)a_alloc(sizeof(lexer_t));
   l_init(l_copy, buffer);
 
   token_t token;
@@ -45,12 +48,10 @@ int main(int argc, char *argv[]) {
       break;
   }
 
-  l_free(l_copy);
-
-  parser_t *parser = malloc(sizeof(parser_t));
+  parser_t *parser = (parser_t *)a_alloc(sizeof(parser_t));
   p_init(parser, l);
 
-  node_t *node = malloc(sizeof(node_t));
+  node_t *node = (node_t *)a_alloc(sizeof(node_t));
   diag = p_parse(parser, node);
   if (diag.type != DT_OK) {
     print_diagnostic(diag, buffer, path);
@@ -59,9 +60,6 @@ int main(int argc, char *argv[]) {
   }
 
   n_dump(*node, 0);
-
-  p_free(parser);
-  // l_free(l);
 
   return 0;
 }

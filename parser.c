@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "arena.h"
 #include "common.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -68,11 +69,6 @@ void n_dump(node_t node, uint8_t indent) {
 void p_init(parser_t *p, lexer_t *lexer) {
   p->lexer = lexer;
   (void)l_next(p->lexer, &p->token);
-}
-
-void p_free(parser_t *p) {
-  l_free(p->lexer);
-  free(p);
 }
 
 static diagnostic_t p_parse_declaration(parser_t *, node_t *);
@@ -165,32 +161,33 @@ static diagnostic_t p_parse_let(parser_t *p, node_t *node, token_type_t type) {
 
   P_EXPECT(diag, p, T_EQUALS);
 
-  node_t initializer;
-  P_CALL(diag, p, p_parse_expression, &initializer);
-  node->as.NODE_Let.initializer = &initializer;
+  node_t *initializer = (node_t *)a_alloc(sizeof(node_t));
+  P_CALL(diag, p, p_parse_expression, initializer);
+  node->as.NODE_Let.initializer = initializer;
 
   return D_OK();
 }
 
 static diagnostic_t p_parse_expression(parser_t *p, node_t *node) {
   diagnostic_t diag;
-  P_CALL(diag, p, p_parse_primary, node);
-  P_CALL(diag, p, p_parse_precedence, node, 0);
+  node_t *lhs = (node_t *)a_alloc(sizeof(node_t));
+  P_CALL(diag, p, p_parse_primary, lhs);
+  node = lhs;
+  P_CALL(diag, p, p_parse_precedence, lhs, 0);
+  node = lhs;
   return diag;
 }
 
-static diagnostic_t p_parse_precedence(parser_t *p, node_t *node,
+static diagnostic_t p_parse_precedence(parser_t *p, node_t *lhs,
                                        uint8_t min_precedence) {
   diagnostic_t diag;
   token_t lookahead = p->token;
-
-  printf("%d\n", node->tag);
 
   while (tt_precedence(lookahead.type) != PREC_NONE &&
          tt_precedence(lookahead.type) >= min_precedence) {
     token_type_t op = lookahead.type;
     P_ADVANCE(diag, p);
-    node_t *rhs = malloc(sizeof(node_t));
+    node_t *rhs = (node_t *)a_alloc(sizeof(node_t));
     P_CALL(diag, p, p_parse_primary, rhs);
     lookahead = p->token;
 
@@ -202,12 +199,12 @@ static diagnostic_t p_parse_precedence(parser_t *p, node_t *node,
       lookahead = p->token;
     }
 
-    node_t *lhs = malloc(sizeof(node_t));
-    lhs->tag = _NODE_BinOp;
-    lhs->as.NODE_BinOp.op = op;
-    lhs->as.NODE_BinOp.lhs = node;
-    lhs->as.NODE_BinOp.rhs = rhs;
-    node = lhs;
+    node_t *tmp = (node_t *)a_alloc(sizeof(node_t));
+    tmp->tag = _NODE_BinOp;
+    tmp->as.NODE_BinOp.op = op;
+    tmp->as.NODE_BinOp.lhs = lhs;
+    tmp->as.NODE_BinOp.rhs = rhs;
+    lhs = tmp;
   }
 
   return D_OK();
@@ -240,7 +237,7 @@ static diagnostic_t p_parse_block(parser_t *p, block_t *block,
     if (p->token.type == T_CLOSE_BRACE)
       break;
 
-    node_t *node = malloc(sizeof(node_t));
+    node_t *node = (node_t *)a_alloc(sizeof(node_t));
     P_CALL(diag, p, fn, node);
     slice_push(block, node);
   }

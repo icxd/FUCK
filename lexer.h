@@ -122,12 +122,6 @@ typedef struct {
 /// \param source The source buffer
 void l_init(lexer_t *lexer, const char *source);
 
-/// Free a `lexer_t` structure provided that said structure
-/// is heap allocated.
-///
-/// \param lexer A pointer to the lexer state
-void l_free(lexer_t *lexer);
-
 /// Get the next token_t
 ///
 /// \param lexer A pointer to the lexer state

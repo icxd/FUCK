@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "arena.h"
 #include "common.h"
 #include <ctype.h>
 #include <stdlib.h>
@@ -9,11 +10,6 @@ void l_init(lexer_t *lexer, const char *source) {
   lexer->pos = 0;
   lexer->length = strlen(source);
   lexer->continuation = false;
-}
-
-void l_free(lexer_t *lexer) {
-  // free((void *)lexer->source);
-  free(lexer);
 }
 
 diagnostic_t l_next(lexer_t *lexer, token_t *token) {
@@ -76,14 +72,14 @@ diagnostic_t l_next(lexer_t *lexer, token_t *token) {
     }
     token->span.end = lexer->pos;
     size_t length = lexer->pos - start;
-    char *buffer = malloc(length + 1);
+    char *buffer = (char *)a_alloc(length + 1);
     strncpy(buffer, lexer->source + start, length);
     buffer[length] = '\0';
     if (token->type == T_INT)
       token->integer = atoi(buffer);
     else
       token->floating = atof(buffer);
-    free(buffer);
+    // free(buffer);
     return D_OK();
   }
 

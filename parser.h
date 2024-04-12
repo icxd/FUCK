@@ -65,7 +65,6 @@ typedef struct {
 } parser_t;
 
 void p_init(parser_t *, lexer_t *);
-void p_free(parser_t *);
 
 diagnostic_t p_parse(parser_t *, node_t *);
 

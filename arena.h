@@ -19,7 +19,7 @@ void *a_realloc(void *, size_t, size_t);
 void a_reset();
 void a_free();
 
-#define arena_init(size)                                                       \
+#define a_init(size)                                                       \
   do {                                                                         \
     _a_init(size);                                                             \
     atexit(a_free);                                                            \
