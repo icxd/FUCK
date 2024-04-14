@@ -50,21 +50,11 @@ typedef struct {
 } ir_value_t;
 
 typedef enum {
-  OP_ALLOC,
-  // OP_LOAD,
-  OP_STORE,
-  OP_ADD,
+  _OP_ALLOC,
+  // _OP_LOAD,
+  _OP_STORE,
+  _OP_ADD,
 } ir_op_t;
-
-static inline bool ir_allocates_new_buffer(ir_op_t op) {
-  switch (op) {
-  case OP_ADD:
-    return true;
-
-  default:
-    return false;
-  }
-}
 
 struct ir_inst_alloc {
   struct ir_value_index result_index;
@@ -116,7 +106,7 @@ static inline void dump_value(ir_value_t value) {
 
 static inline void dump_inst(ir_inst_t inst) {
   switch (inst.tag) {
-  case OP_ALLOC: {
+  case _OP_ALLOC: {
     ir_value_t result = {.tag = V_INDEX, .index = inst.alloc.result_index};
     ir_value_t bytes = {.tag = V_INTEGER, .integer = inst.alloc.bytes};
     dump_value(result);
@@ -125,7 +115,7 @@ static inline void dump_inst(ir_inst_t inst) {
     printf("\n");
   } break;
 
-  case OP_STORE: {
+  case _OP_STORE: {
     ir_value_t destination = {.tag = V_INDEX, .index = inst.store.destination};
     printf("store ");
     dump_value(destination);
@@ -134,7 +124,7 @@ static inline void dump_inst(ir_inst_t inst) {
     printf("\n");
   } break;
 
-  case OP_ADD: {
+  case _OP_ADD: {
     ir_value_t result = {.tag = V_INDEX, .index = inst.add.result_index};
     dump_value(result);
     printf(" := add ");
