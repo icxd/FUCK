@@ -2,6 +2,7 @@
 #define IR_H
 
 #include "common.h"
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -19,67 +20,130 @@
 
 typedef uint8_t temp_index_t;
 
-enum {
+struct allocated_buffer {
+  temp_index_t index;
+  int64_t buffer_size;
+};
+
+typedef slice(struct allocated_buffer) buffers_t;
+
+typedef enum {
   V_INTEGER,
   V_INDEX,
+} ir_value_type_t;
+
+struct ir_value_integer {
+  int64_t value;
 };
+
+struct ir_value_index {
+  temp_index_t index;
+  int64_t buffer_size;
+};
+
 typedef struct {
-  uint8_t tag;
+  ir_value_type_t tag;
   union {
-    int64_t integer;
-    temp_index_t index;
+    struct ir_value_integer integer;
+    struct ir_value_index index;
   };
 } ir_value_t;
 
 typedef enum {
-  OP_NONE,
+  OP_ALLOC,
+  // OP_LOAD,
+  OP_STORE,
   OP_ADD,
 } ir_op_t;
 
+static inline bool ir_allocates_new_buffer(ir_op_t op) {
+  switch (op) {
+  case OP_ADD:
+    return true;
+
+  default:
+    return false;
+  }
+}
+
+struct ir_inst_alloc {
+  struct ir_value_index result_index;
+  struct ir_value_integer bytes;
+};
+// struct ir_inst_load {};
+struct ir_inst_store {
+  struct ir_value_index destination;
+  ir_value_t source;
+};
+struct ir_inst_add {
+  struct ir_value_index result_index;
+  ir_value_t source1, source2;
+};
+
 typedef struct {
-  temp_index_t result;
-  ir_op_t op;
-  option(ir_value_t) arg1;
-  option(ir_value_t) arg2;
+  ir_op_t tag;
+
+  union {
+    struct ir_inst_alloc alloc;
+    // struct ir_inst_load load;
+    struct ir_inst_store store;
+    struct ir_inst_add add;
+  };
 } ir_inst_t;
 
-void ir_compile_value(ir_value_t);
-void ir_compile_inst(ir_inst_t);
-const char *ir_get_instruction_from_op(ir_op_t);
+typedef struct {
+  buffers_t allocated_buffers;
+} ir_state_t;
+
+void ir_init(ir_state_t *);
+
+diagnostic_t ir_compile_value(ir_state_t *, ir_value_t,
+                              struct allocated_buffer *);
+diagnostic_t ir_compile_inst(ir_state_t *, ir_inst_t *);
+int64_t ir_get_size_of_value(ir_state_t *, ir_value_t);
 
 static inline void dump_value(ir_value_t value) {
   switch (value.tag) {
   case V_INTEGER:
-    printf("%ld", value.integer);
+    printf("%ld", value.integer.value);
     break;
 
   case V_INDEX:
-    printf("t%d", value.index);
+    printf("%%%d", value.index.index);
     break;
   }
 }
 
 static inline void dump_inst(ir_inst_t inst) {
-  printf("t%d = ", inst.result);
+  switch (inst.tag) {
+  case OP_ALLOC: {
+    ir_value_t result = {.tag = V_INDEX, .index = inst.alloc.result_index};
+    ir_value_t bytes = {.tag = V_INTEGER, .integer = inst.alloc.bytes};
+    dump_value(result);
+    printf(" := alloc ");
+    dump_value(bytes);
+    printf("\n");
+  } break;
 
-  if (inst.arg1 != none) {
-    dump_value(*inst.arg1);
+  case OP_STORE: {
+    ir_value_t destination = {.tag = V_INDEX, .index = inst.store.destination};
+    printf("store ");
+    dump_value(destination);
+    printf(", ");
+    dump_value(inst.store.source);
+    printf("\n");
+  } break;
+
+  case OP_ADD: {
+    ir_value_t result = {.tag = V_INDEX, .index = inst.add.result_index};
+    dump_value(result);
+    printf(" := add ");
+    dump_value(inst.add.source1);
+    printf(", ");
+    dump_value(inst.add.source2);
+    printf("\n");
+  } break;
   }
-
-  if (inst.arg2 != none) {
-    switch (inst.op) {
-    case OP_NONE:
-      break;
-
-    case OP_ADD:
-      printf(" + ");
-      break;
-    }
-
-    dump_value(*inst.arg2);
-  }
-
-  printf("\n");
 }
 
 #endif // IR_H

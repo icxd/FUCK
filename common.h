@@ -24,7 +24,8 @@ extern void *a_alloc(size_t);
   }
 #define slice_init(s)                                                          \
   do {                                                                         \
-    (s)->items = malloc(sizeof(*(s)->items) * INIT_SLICE_CAP);                 \
+    (s)->items = (__typeof__(*(s)->items) *)malloc(sizeof(*(s)->items) *       \
+                                                   INIT_SLICE_CAP);            \
     (s)->capacity = INIT_SLICE_CAP;                                            \
     (s)->size = 0;                                                             \
   } while (0)
@@ -32,7 +33,8 @@ extern void *a_alloc(size_t);
   do {                                                                         \
     if ((s)->size >= (s)->capacity) {                                          \
       (s)->capacity = (s)->capacity == 0 ? INIT_SLICE_CAP : (s)->capacity * 2; \
-      (s)->items = realloc((s)->items, sizeof(*(s)->items) * (s)->capacity);   \
+      (s)->items = (__typeof__(*(s)->items) *)realloc(                         \
+          (s)->items, sizeof(*(s)->items) * (s)->capacity);                    \
     }                                                                          \
     (s)->items[(s)->size++] = (__VA_ARGS__);                                   \
   } while (0)
@@ -77,7 +79,7 @@ typedef enum {
 typedef struct {
   diagnostic_type_t type;
   span_t span;
-  char *message;
+  const char *message;
 } diagnostic_t;
 
 #define D_OK() ((diagnostic_t){DT_OK})
